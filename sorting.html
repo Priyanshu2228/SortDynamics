@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SortDynamics — Interactive Sorting Visualizer</title>
+  <meta name="description" content="Visualize popular sorting algorithms in real time with step-by-step animations, complexity info, and live stats." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="sorting.css" />
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-brand">
+      <div class="brand-icon">⚡</div>
+      <div>
+        <div class="brand-title">SortDynamics</div>
+        <div class="brand-sub">Sorting Visualizer</div>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <div class="control-chip">
+        <span class="chip-label">Algorithm</span>
+        <select id="algo">
+          <option value="bubble">Bubble Sort</option>
+          <option value="selection">Selection Sort</option>
+          <option value="insertion">Insertion Sort</option>
+          <option value="quick">Quick Sort</option>
+          <option value="merge">Merge Sort</option>
+          <option value="heap">Heap Sort</option>
+        </select>
+      </div>
+
+      <div class="control-chip">
+        <span class="chip-label">Size</span>
+        <input id="size" type="range" min="5" max="20" value="10" />
+        <span id="sizeDisplay" class="chip-value">10</span>
+      </div>
+
+      <div class="control-chip">
+        <span class="chip-label">Speed</span>
+        <input id="speed" type="range" min="0.25" max="3" value="1" step="0.25" />
+        <span id="speedDisplay" class="chip-value">1×</span>
+      </div>
+
+      <div class="btn-group">
+        <button id="btnGen" class="btn btn-gen">↻ Generate</button>
+        <button id="btnRun" class="btn btn-run">▶ Start</button>
+        <button id="btnStop" class="btn btn-stop">⏹ Stop</button>
+      </div>
+    </div>
+
+    <div class="header-live-stats">
+      <div class="live-stat">
+        <span class="ls-icon">🔁</span>
+        <div>
+          <div class="ls-val" id="statComps">0</div>
+          <div class="ls-lbl">Comparisons</div>
+        </div>
+      </div>
+      <div class="live-stat">
+        <span class="ls-icon">⇅</span>
+        <div>
+          <div class="ls-val" id="statSwaps">0</div>
+          <div class="ls-lbl">Swaps</div>
+        </div>
+      </div>
+      <div class="live-stat">
+        <span class="ls-icon">⏱</span>
+        <div>
+          <div class="ls-val" id="statTime">0ms</div>
+          <div class="ls-lbl">Elapsed</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN LAYOUT ===== -->
+  <main class="app-layout">
+
+    <!-- LEFT: Algorithm Info Panel -->
+    <aside class="info-sidebar left-sidebar">
+
+      <div class="sidebar-card algo-card">
+        <div class="algo-badge" id="algoBadge">🫧</div>
+        <div class="algo-name" id="algoName">Bubble Sort</div>
+        <div class="algo-tag" id="algoTag">Comparison · In-place</div>
+        <p class="algo-desc" id="algoDesc">
+          Repeatedly steps through the list, compares adjacent elements and swaps them if they are in the wrong order. Simple but inefficient on large datasets.
+        </p>
+      </div>
+
+      <div class="sidebar-card complexity-card">
+        <div class="card-section-title">⏳ Complexity</div>
+        <div class="complexity-grid">
+          <div class="cplx-item cplx-best">
+            <span class="cplx-case">Best</span>
+            <span class="cplx-val" id="cpxBest">O(n)</span>
+          </div>
+          <div class="cplx-item cplx-avg">
+            <span class="cplx-case">Avg</span>
+            <span class="cplx-val" id="cpxAvg">O(n²)</span>
+          </div>
+          <div class="cplx-item cplx-worst">
+            <span class="cplx-case">Worst</span>
+            <span class="cplx-val" id="cpxWorst">O(n²)</span>
+          </div>
+          <div class="cplx-item cplx-space">
+            <span class="cplx-case">Space</span>
+            <span class="cplx-val" id="cpxSpace">O(1)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar-card traits-card">
+        <div class="card-section-title">🧬 Properties</div>
+        <div class="trait-list" id="traitList">
+          <div class="trait-item trait-yes" id="traitStable">✓ Stable</div>
+          <div class="trait-item trait-yes" id="traitInPlace">✓ In-place</div>
+          <div class="trait-item trait-no"  id="traitAdaptive">✗ Adaptive</div>
+        </div>
+      </div>
+
+      <div class="sidebar-card use-card">
+        <div class="card-section-title">💡 Best Used When</div>
+        <p class="use-text" id="useCase">Teaching/learning sorting concepts. Small datasets. When code simplicity matters more than performance.</p>
+      </div>
+
+    </aside>
+
+    <!-- CENTER: Canvas Visualizer -->
+    <section class="canvas-section">
+      <div class="canvas-header">
+        <span class="canvas-status" id="statusBadge">● Ready</span>
+        <span class="canvas-algo-label" id="canvasAlgoLabel">Bubble Sort</span>
+        <span class="canvas-progress-wrap">
+          <span class="canvas-progress-bar-bg">
+            <span class="canvas-progress-fill" id="progressFill"></span>
+          </span>
+          <span class="canvas-pct" id="progressPct">0%</span>
+        </span>
+      </div>
+      <div class="canvas-wrap">
+        <div id="boxContainer" class="box-container">
+          <div id="visualizerFloor" class="visualizer-floor"></div>
+        </div>
+      </div>
+      <div class="canvas-legend">
+        <span class="legend-item"><span class="legend-dot dot-normal"></span>Unsorted</span>
+        <span class="legend-item"><span class="legend-dot dot-active"></span>Comparing</span>
+        <span class="legend-item"><span class="legend-dot dot-sorted"></span>Sorted</span>
+      </div>
+    </section>
+
+    <!-- RIGHT: State + Pseudocode Panel -->
+    <aside class="info-sidebar right-sidebar">
+
+      <div class="sidebar-card state-card">
+        <div class="card-section-title">📊 Live State</div>
+        <div class="state-row">
+          <span class="state-key">Status</span>
+          <span class="state-val status-ready" id="stateStatus">Idle</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Array Size</span>
+          <span class="state-val" id="stateSize">10</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Speed</span>
+          <span class="state-val" id="stateSpeed">1×</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Pass</span>
+          <span class="state-val" id="statePass">—</span>
+        </div>
+        <div class="state-row">
+          <span class="state-key">Step</span>
+          <span class="state-val" id="stateStep">—</span>
+        </div>
+      </div>
+
+      <div class="sidebar-card pseudo-card">
+        <div class="card-section-title">📝 Pseudocode</div>
+        <pre class="pseudo-code" id="pseudoCode">for i = 0 to n-1
+  for j = 0 to n-i-2
+    if arr[j] > arr[j+1]
+      swap(arr[j], arr[j+1])</pre>
+      </div>
+
+      <div class="sidebar-card tips-card">
+        <div class="card-section-title">🎯 Quick Tips</div>
+        <ul class="tips-list" id="tipsList">
+          <li>Click <strong>Generate</strong> to create a new random array</li>
+          <li>Adjust <strong>Size</strong> to change array length</li>
+          <li>Increase <strong>Speed</strong> for faster animation</li>
+          <li>Press <strong>Stop</strong> to cancel at any time</li>
+        </ul>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="app-footer">
+    <span>SortDynamics — Interactive Algorithm Visualizer</span>
+    <span class="footer-sep">·</span>
+    <span>Select → Generate → Start</span>
+  </footer>
+
+  <script src="sorting.js"></script>
+</body>
+</html>
